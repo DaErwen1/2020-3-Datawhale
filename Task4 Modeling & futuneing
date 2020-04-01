@@ -1,0 +1,39 @@
+在做数据处理时，需要用到不同的手法，如特征标准化，主成分分析，等等会重复用到某些参数，sklearn中提供了管道，可以一次性的解决该问题
+
+先展示先通常的做法
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.linear_model import LogisticRegression
+
+df = pd.read_csv('wdbc.csv')
+X = df.iloc[:, 2:].values
+y = df.iloc[:, 1].values
+# 标准化
+sc = StandardScaler()
+X_train_std = sc.fit_transform(X_train)
+X_test_std = sc.transform(X_test)
+# 主成分分析PCA
+pca = PCA(n_components=2)
+X_train_pca = pca.fit_transform(X_train_std)
+X_test_pca = pca.transform(X_test_std)
+# 逻辑斯蒂回归预测
+lr = LogisticRegression(random_state=1)
+lr.fit(X_train_pca, y_train)
+y_pred = lr.predict(X_test_pca)
+先对数据标准化，然后做主成分分析降维，最后做回归预测
+
+现在使用管道
+
+复制代码
+from sklearn.pipeline import Pipeline
+
+pipe_lr = Pipeline([('sc', StandardScaler()), ('pca', PCA(n_components=2)), ('lr', LogisticRegression(random_state=1))])
+pipe_lr.fit(X_train, y_train)
+pipe_lr.score(X_test, y_test)
+复制代码
+Pipeline对象接收元组构成的列表作为输入，每个元组第一个值作为变量名，元组第二个元素是sklearn中的transformer或Estimator。
+
+管道中间每一步由sklearn中的transformer构成，最后一步是一个Estimator。我们的例子中，管道包含两个中间步骤，一个StandardScaler和一个PCA，这俩都是transformer，逻辑斯蒂回归分类器是Estimator。
+
+当管道pipe_lr执行fit方法时，首先StandardScaler执行fit和transform方法，然后将转换后的数据输入给PCA，PCA同样执行fit和transform方法，最后将数据输入给LogisticRegression，训练一个LR模型。
